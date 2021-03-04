@@ -1,0 +1,181 @@
+---
+title: "TD3 - Implémentation de l’ACP "
+author: "Rida BOUSHAB - M1 Big Data UPPA"
+output:
+  pdf_document:
+    fig_height: 4
+    keep_tex: yes
+  word_document: default
+---
+
+# Présentation
+
+Une implémentation personnelle de l’ACP afin de mieux comprendre son
+fonctionnement
+
+# Debut
+Pour Les questions preliminaire voir pdf latex (avec overleaf).
+
+## Chargement de la librairie
+
+<!-- charger la librairie pour l'ACP -->
+
+```{r}
+
+library(plotrix)
+
+```
+
+
+## Importation des données et affichage des graphes
+
+On importe dans un premier temps les données
+
+```{r}
+Deca <- read.table("./AnaDo_JeuDonnees_Decathlon.csv",
+header=TRUE, sep=";",dec=".", row.names=1,
+check.names=FALSE, fileEncoding="latin1")
+```
+
+##Première étape : calcul de l’ACP
+
+```{r}
+Pca <- function(X,norm=T){ 
+
+  
+ #le parametre bol norm permet de savoir si on veut centrer et réduire les données.
+  
+  #  la data centrée réduite
+  m <- scale(X,scale=norm)
+  
+  # calcul du covariance 
+  c<-cov(m)
+  
+  # diagonal covariance
+  eig <- eigen(c)
+  
+  # eignvectors et eigenvalues
+  vep <- eig$vectors #les vecteurs propres
+  vap <- eig$values #les valeurs propres
+  
+  
+  # output 
+  data <- list("data"=m , "vap"=vap,  "vep"=vep)
+
+  return(data)
+
+}
+```
+
+On teste la fonction Acp:
+
+```{r}
+Test<-Pca(Deca[,1:10],T)
+
+Test
+```
+
+##Deuxième étape : affichage de l’ACP pour les individus
+
+
+
+
+```{r}
+individusACP<-function(axes=i:j){
+  #A c'est le resultat du produit matriciel entre deux matrices
+  A<-Test$data%*%Test$vep[,axes[1]:axes[2]]
+  par(mar=c(4, 1, 1, 1),pty = "s") 
+  plot(A[,1],A[,2],xlim = c(-4,4),ylim = c(-4,4),
+       xlab = "Dim1",ylab="Dim2", main="graph of the inviduals",cex=0.74)
+  abline(h=0,v=0, lty = 10)
+  text(x=A[,1],y=A[,2], label=row.names(A))
+  }
+```
+
+```{r}
+individusACP(axes=1:2)
+```
+
+
+##Troisième étape : fonction summary
+
+```{r}
+suma<-function(test)
+{
+#matrice des valeur propre
+m<-t(as.matrix(test$vap))
+prc<-c()
+for(j in 1:length(m)){
+  prc<-append(prc,m[j]*10)}
+
+#le cumule de la varaiance
+var1 <- cumsum(m)
+var2 <- var1/var1[length(var1)]
+
+eg<-rbind(m,prc,var2)
+row.names(eg)<-c("eigenvalue","% du variance","%cumulative du var")
+
+colnames(eg)<-c("Dim1","Dim2","Dim3","Dim4","Dim5","Dim6","Dim7","Dim8","Dim9"
+                ,"Dim10")
+
+output1<-list("eg"=eg)
+return(output1)
+}
+```
+
+```{r}
+suma(Test)
+```
+
+
+
+##Quatrième étape : affichage de l’ACP pour les variables
+
+```{r}
+
+variablesACP<-function(axes=k:l){
+#la racine des valeurs propres
+ sqrtav<-sqrt(Test$vap)
+ mat<-c()
+ matt<-c()
+ #calacul des nouveau vercteur(mat pour dim1 et matt pour dim2) pour la correlation
+for(j in 1:10){
+  mat<-append(mat,sqrtav[axes[1]]*Test$vep[j,axes[1]])
+  matt<-append(matt,sqrtav[axes[2]]*Test$vep[j,axes[2]])
+     
+   }
+
+par(mar=c(4, 1, 1, 1),pty = "s") 
+plot(t(mat),t(matt), col="black",lty = 0.5, pch = 16, asp = 1, 
+     xlim = c(-1, 1), ylim = c(-1, 1), main = "Graph of varaiables",
+     ylab = "Dim2",xlab = "Dim1")
+abline(h=0,v=0, lty = 10)
+  
+draw.circle(0, 0, 1, nv=100, border=NULL, col=NA, lty=1, lwd=1)
+  
+## draw arrows from point to point :
+text(x=mat,y=matt,labels = colnames(Test$data))
+
+segments(x0=0, y0=0, x1 =mat , y1 =matt,
+        col = "black", lty = par("lty"), lwd = par("lwd")  )
+#arrows(mat , matt, mat+0.0009 , matt+0.0009, col="black")
+
+}
+```
+
+
+```{r}
+variablesACP(axes=1:2)
+```
+
+
+
+
+
+
+
+
+
+
+
+
